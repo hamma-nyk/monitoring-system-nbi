@@ -1,0 +1,52 @@
+npm install -g pm2 tsx
+pm2 delete ping-engine
+pm2 start ecosystem.config.js
+pm2 logs ping-engine
+
+--AUTO START--
+pm2 save
+pm2 startup
+
+
+--AUTO START--
+1. **1. Pastikan Aplikasi Berjalan Normal di PM2:**
+Pastikan saat ini aplikasi Anda sudah berjalan di PM2:
+
+```bash
+pm2 save
+
+```
+
+*(Perintah `pm2 save` merekam daftar aplikasi yang sedang aktif saat ini agar diingat oleh PM2).*
+
+
+2. **2. Buka Task Scheduler Windows:**
+1. Tekan tombol **Windows + R** di keyboard Anda.
+2. Ketik `taskschd.msc` lalu tekan **Enter**.
+3. Di panel sebelah kanan, klik **Create Basic Task...** (Buat Tugas Dasar).
+
+
+3. **3. Atur Pemicu Saat Komputer Nyala:**
+1. **Name:** Beri nama, contoh: `PM2BackgroundStartup`.
+2. **Trigger:** Pilih **When the computer starts** (Saat komputer dinyalakan), lalu klik *Next*.
+3. **Action:** Pilih **Start a program** (Menjalankan program), lalu klik *Next*.
+
+
+4. **4. Masukkan Perintah Startup PM2:**
+Di bagian pengaturan program:
+
+* **Program/script:** Ketik `pm2` (atau path lengkapnya jika tidak terdeteksi, misal `C:\Users\Lucifer\AppData\Roaming\npm\pm2.cmd`).
+* **Add arguments:** Ketik `resurrect`
+*(Perintah `pm2 resurrect` bertugas membangunkan kembali seluruh aplikasi yang sebelumnya sudah disimpan dengan `pm2 save`)*.
+
+Klik **Next**, centang kotak *"Open the Properties dialog for this task when I click Finish"*, lalu klik **Finish**.
+
+
+5. **5. Atur Hak Akses Administrator (Opsional tapi Disarankan):**
+Pada jendela *Properties* yang muncul:
+
+1. Centang opsi **Run with highest privileges** (Jalankan dengan hak istimewa tertinggi) agar Windows memberikan izin penuh pada skrip background.
+2. Klik **OK**.
+
+
+Selesai! Sekarang, kapan pun komputer atau server Windows Anda dimatikan atau restart (misalnya karena mati lampu), begitu komputer menyala kembali, Windows akan otomatis menjalankan perintah `pm2 resurrect`, dan baik mesin *ping-engine* maupun bot WhatsApp Anda akan langsung hidup kembali secara otomatis di latar belakang!

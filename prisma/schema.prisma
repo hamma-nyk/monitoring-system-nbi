@@ -1,0 +1,123 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"] // Tambahkan baris ini
+}
+
+datasource db {
+  provider = "postgresql"
+  schemas  = ["sc_network", "sc_master", "sc_storage", "sc_vm", "sc_logs"] // Daftarkan semua schema di sini
+}
+
+// ==========================================
+// SCHEMA: sc_master
+// ==========================================
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String // Jangan lupa password di-hash (misal pakai bcrypt) nantinya
+
+  @@schema("sc_master") // Penanda bahwa tabel ini masuk ke sc_master
+}
+
+// ==========================================
+// SCHEMA: sc_network
+// ==========================================
+model MasterType {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  icon      String   @default("monitor") // Tambahkan baris ini
+  color     String?  
+  devices   Device[] 
+  createdAt DateTime @default(now())
+
+  @@schema("sc_network")
+}
+
+model Device {
+  id        Int        @id @default(autoincrement())
+  ipAddress String     @unique
+  remark    String
+  xPos      Float      
+  yPos      Float      
+  
+  typeId    Int
+  type      MasterType @relation(fields: [typeId], references: [id])
+
+  failCount      Int        @default(0)
+  lastNotifState String     @default("UP") // Nilainya: "UP" atau "DOWN"
+
+  // --- TAMBAHAN BARU UNTUK BACKGROUND SERVICE ---
+  status         String     @default("unknown") // online atau offline
+  latency        Int        @default(0)         // Waktu ping (ms)
+  // ----------------------------------------------
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@schema("sc_network") // Penanda schema
+}
+
+// Tambahkan ini di bagian bawah file
+model Recipient {
+  id             Int      @id @default(autoincrement())
+  name           String
+  phone          String   @unique
+  isNotifEnabled Boolean  @default(true) // Status Enable/Disable Notif
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@schema("sc_network")
+}
+
+model Edge {
+  id           String   @id // Menggunakan String karena format dari React Flow (contoh: e1-2)
+  source       String
+  target       String
+  sourceHandle String?
+  targetHandle String?
+  
+  createdAt    DateTime @default(now())
+
+  @@schema("sc_network")
+}
+
+model StorageServer {
+  id          String   @id @default(cuid())
+  name        String   // Contoh: "NAS Backup Demak"
+  type        String   // "truenas" atau "smb"
+  ipAddress   String
+  
+  // Kredensial (Opsional, diisi tergantung tipe)
+  apiKey      String?  @db.Text // Khusus TrueNAS
+  smbUser     String?           // Khusus SMB
+  smbPassword String?           // Khusus SMB
+  
+  status      String   @default("unknown") // online/offline
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@schema("sc_storage") // Sesuaikan jika Anda menggunakan schema khusus
+}
+
+model EsxiHost {
+  id        String   @id @default(cuid())
+  name      String   // Contoh: "ESXi Server 1"
+  ipAddress String
+  username  String   // Default ESXi biasanya: "root"
+  password  String
+  status    String   @default("unknown")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("sc_vm") // Sesuaikan jika Anda menggunakan schema khusus
+}
+
+model SystemLog {
+  id        Int      @id @default(autoincrement())
+  level     String   // "ERROR", "SUCCESS", "INFO"
+  title     String
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@schema("sc_logs")
+}
