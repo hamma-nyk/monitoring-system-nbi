@@ -1,6 +1,6 @@
 const Service = require("node-windows").Service;
 const svc = new Service({
-  name: "Network Ping Engine",
+  name: "MonitoringSystem_BE",
   script: "D:\\PROJECT\\monitoring\\ping-engine.js",
 });
 svc.on("uninstall", function () {

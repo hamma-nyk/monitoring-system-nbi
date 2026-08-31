@@ -3,8 +3,8 @@ const Service = require("node-windows").Service;
 console.log("Menyiapkan instalasi service...");
 
 const svc = new Service({
-  name: "Network Ping Engine",
-  description: "Background service untuk memantau status perangkat jaringan",
+  name: "MonitoringSystem_BE",
+  description: "Background service Monotoring System App",
   // Pastikan path ini menunjuk ke file ping-engine Anda yang sebenarnya
   script: "D:\\PROJECT\\monitoring\\ping-engine.js",
 

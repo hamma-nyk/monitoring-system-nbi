@@ -33,7 +33,8 @@ export async function POST(req: Request) {
     const cookieStore = await cookies();
     cookieStore.set("auth_token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // secure: req.url.startsWith("https://"), // Gunakan secure hanya jika menggunakan HTTPS
+      secure: false, // development and testing across LAN without SSL
       sameSite: "lax",
       path: "/",
       maxAge: rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60, // Detik

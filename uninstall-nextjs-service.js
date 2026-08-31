@@ -1,7 +1,7 @@
 const Service = require("node-windows").Service;
 
 const svc = new Service({
-  name: "Monitoring NextJS",
+  name: "MonitoringSystem_FE",
   script: "D:\\PROJECT\\monitoring\\service-nextjs.js",
 });
 

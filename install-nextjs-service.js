@@ -1,8 +1,8 @@
 const Service = require("node-windows").Service;
 
 const svc = new Service({
-  name: "Monitoring NextJS",
-  description: "Next.js monitoring app running on port 3008",
+  name: "MonitoringSystem_FE",
+  description: "Monitoring System app running on port 3008",
   script: "D:\\PROJECT\\monitoring\\service-nextjs.js",
   env: [
     {
