@@ -12,6 +12,7 @@ import {
   Server,
   Menu,
   X,
+  ListTodo,
 } from "lucide-react";
 
 export default function MainSidebar({
@@ -95,6 +96,11 @@ export default function MainSidebar({
               href: "/storage-monitor",
               icon: HardDrive,
               label: "Storage Monitor",
+            },
+            {
+              href: "/todo",
+              icon: ListTodo,
+              label: "Todo List",
             },
             {
               href: "/whatsapp",

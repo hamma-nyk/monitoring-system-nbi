@@ -5,7 +5,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  schemas  = ["sc_network", "sc_master", "sc_storage", "sc_vm", "sc_logs"] // Daftarkan semua schema di sini
+  schemas  = ["sc_network", "sc_master", "sc_storage", "sc_vm", "sc_logs", "sc_todo"] // Daftarkan semua schema di sini
 }
 
 // ==========================================
@@ -120,4 +120,22 @@ model SystemLog {
   createdAt DateTime @default(now())
 
   @@schema("sc_logs")
+}
+
+// ==========================================
+// SCHEMA: sc_todo
+// ==========================================
+model TodoList {
+  id          Int       @id @default(autoincrement())
+  kegiatan    String
+  deskripsi   String    @db.Text
+  progress    Int       @default(0) // 0 - 100
+  startDate   DateTime
+  endDate     DateTime
+  priority    String    // urgent, medium, low
+  status      String    @default("open") // open, close
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@schema("sc_todo")
 }
