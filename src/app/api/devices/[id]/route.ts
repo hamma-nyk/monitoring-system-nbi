@@ -15,10 +15,24 @@ export async function PUT(
     const updatedDevice = await prisma.device.update({
       where: { id },
       data: {
-        ...(body.ipAddress && { ipAddress: body.ipAddress }),
+        ...(body.ipAddress !== undefined && {
+          ipAddress:
+            typeof body.ipAddress === "string" && body.ipAddress.trim() !== ""
+              ? body.ipAddress.trim()
+              : null,
+        }),
         ...(body.remark && { remark: body.remark }),
         ...(body.xPos !== undefined && { xPos: body.xPos }),
         ...(body.yPos !== undefined && { yPos: body.yPos }),
+        ...(body.portCount !== undefined && {
+          portCount: body.portCount === null ? null : Number(body.portCount),
+        }),
+        ...(body.portTypes !== undefined && {
+          portTypes: body.portTypes,
+        }),
+        ...(body.portVlans !== undefined && {
+          portVlans: body.portVlans,
+        }),
       },
     });
 

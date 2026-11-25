@@ -13,6 +13,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Smartphone,
+  Cctv,
+  Network,
+  Waypoints,
+  Globe,
 } from "lucide-react";
 
 interface NetworkSidebarProps {
@@ -61,6 +65,14 @@ export default function NetworkSidebar({
         return <Box {...props} />;
       case "smartphone":
         return <Smartphone {...props} />;
+      case "cctv":
+        return <Cctv {...props} />;
+      case "switch":
+        return <Network {...props} />;
+      case "gateway":
+        return <Waypoints {...props} />;
+      case "modem":
+        return <Globe {...props} />;
       case "monitor":
       default:
         return <Monitor {...props} />;

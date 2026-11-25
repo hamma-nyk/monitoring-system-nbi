@@ -20,7 +20,11 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { ipAddress, remark, xPos, yPos, typeName } = body;
+    const { ipAddress, remark, xPos, yPos, typeName, portCount, portTypes, portVlans } = body;
+    const normalizedIp =
+      typeof ipAddress === "string" && ipAddress.trim() !== ""
+        ? ipAddress.trim()
+        : null;
 
     // Cari MasterTipe berdasarkan nama, jika tidak ada, buat baru
     let masterType = await prisma.masterType.findUnique({
@@ -36,10 +40,16 @@ export async function POST(req: Request) {
     // Simpan Device baru ke database
     const newDevice = await prisma.device.create({
       data: {
-        ipAddress,
+        ipAddress: normalizedIp,
         remark,
         xPos,
         yPos,
+        portCount:
+          portCount !== undefined && portCount !== null
+            ? Number(portCount)
+            : null,
+        portTypes: Array.isArray(portTypes) ? portTypes : undefined,
+        portVlans: Array.isArray(portVlans) ? portVlans : undefined,
         typeId: masterType.id,
       },
       include: { type: true },

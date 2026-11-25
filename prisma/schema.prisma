@@ -35,10 +35,13 @@ model MasterType {
 
 model Device {
   id        Int        @id @default(autoincrement())
-  ipAddress String     @unique
+  ipAddress String?    @unique
   remark    String
   xPos      Float      
   yPos      Float      
+  portCount Int?       // Jumlah port (khusus perangkat seperti Switch, Modem, Gateway)
+  portTypes Json?      // Tipe tiap port (misal: ["WAN", "LAN", "POE", "SFP"])
+  portVlans Json?      // Tag TRUNK / VLAN ID tiap port (misal: ["TRUNK", "10", "20"])
   
   typeId    Int
   type      MasterType @relation(fields: [typeId], references: [id])
@@ -70,13 +73,42 @@ model Recipient {
 }
 
 model Edge {
-  id           String   @id // Menggunakan String karena format dari React Flow (contoh: e1-2)
-  source       String
-  target       String
-  sourceHandle String?
-  targetHandle String?
+  id            String   @id // Menggunakan String karena format dari React Flow (contoh: e1-2)
+  source        String
+  target        String
+  sourceHandle  String?
+  targetHandle  String?
+  color         String?  @default("#94a3b8")
+  labelOffsetX  Float?   @default(0)
+  labelOffsetY  Float?   @default(0)
+  labelProgress Float?   @default(0.5)
   
-  createdAt    DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  @@schema("sc_network")
+}
+
+model CanvasArea {
+  id        String   @id
+  shape     String   @default("rectangle")
+  label     String?  @default("")
+  xPos      Float
+  yPos      Float
+  width     Float    @default(240)
+  height    Float    @default(160)
+  rotation  Float    @default(0)
+  color     String   @default("#3b82f6")
+  opacity   Int      @default(5)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("sc_network")
+}
+
+model CanvasSetting {
+  id            Int      @id @default(1)
+  isInteractive Boolean  @default(true)
+  updatedAt     DateTime @updatedAt
 
   @@schema("sc_network")
 }
