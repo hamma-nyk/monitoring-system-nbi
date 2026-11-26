@@ -48,6 +48,9 @@ import {
   Hexagon,
   RotateCcw,
   Globe,
+  Search,
+  Download,
+  Upload,
 } from "lucide-react";
 
 import DeviceNode from "@/components/DeviceNode";
@@ -126,7 +129,7 @@ const formatPortLabel = (
   }
   if (parts.length === 0) return undefined;
   if (parts.length === 1) return parts[0];
-  return `${parts[0]} ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬Â ${parts[1]}`;
+  return `${parts[0]} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ${parts[1]}`;
 };
 
   const buildEdgeVisuals = (
@@ -177,6 +180,18 @@ function FlowCanvas() {
   // State Interactivity (Lock / Unlock Canvas)
   const [isInteractive, setIsInteractive] = useState(true);
 
+  // State Find Device (Search Bar)
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(
+    null,
+  );
+  const highlightTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
   // State Warna Line Penghubung (Edge)
   const [defaultEdgeColor, setDefaultEdgeColor] = useState("#94a3b8");
   const [selectedEdge, setSelectedEdge] = useState<{
@@ -223,95 +238,96 @@ function FlowCanvas() {
     }
   };
 
-  useEffect(() => {
-    const loadData = async () => {
-      await fetchMasterTypes();
-      try {
-        // Load Devices & Areas
-        const [devRes, areaRes] = await Promise.all([
-          fetch("/api/devices"),
-          fetch("/api/areas"),
-        ]);
-        const data = await devRes.json();
-        const areasData = await areaRes.json();
+  const loadData = useCallback(async () => {
+    await fetchMasterTypes();
+    try {
+      // Load Devices & Areas
+      const [devRes, areaRes] = await Promise.all([
+        fetch("/api/devices"),
+        fetch("/api/areas"),
+      ]);
+      const data = await devRes.json();
+      const areasData = await areaRes.json();
 
-        const loadedNodes: Node[] = [];
+      const loadedNodes: Node[] = [];
 
-        if (Array.isArray(areasData)) {
-          for (const a of areasData) {
-            loadedNodes.push({
-              id: a.id,
-              type: "area",
-              position: { x: a.xPos, y: a.yPos },
-              zIndex: -1,
-              style: { width: a.width || 240, height: a.height || 160 },
-              data: {
-                shape: a.shape || "rectangle",
-                label: a.label || "",
-                rotation: a.rotation ?? 0,
-                color: a.color || "#3b82f6",
-                opacity: a.opacity ?? 5,
-              },
-            });
-          }
+      if (Array.isArray(areasData)) {
+        for (const a of areasData) {
+          loadedNodes.push({
+            id: a.id,
+            type: "area",
+            position: { x: a.xPos, y: a.yPos },
+            zIndex: -1,
+            style: { width: a.width || 240, height: a.height || 160 },
+            data: {
+              shape: a.shape || "rectangle",
+              label: a.label || "",
+              rotation: a.rotation ?? 0,
+              color: a.color || "#3b82f6",
+              opacity: a.opacity ?? 5,
+            },
+          });
         }
-
-        if (Array.isArray(data)) {
-          for (const d of data) {
-            loadedNodes.push({
-              id: d.id.toString(),
-              type: "device",
-              position: { x: d.xPos, y: d.yPos },
-              data: {
-                remark: d.remark,
-                type: d.type?.name || "Device",
-                icon: d.type?.icon || "monitor",
-                ip: d.ipAddress,
-                portCount: d.portCount ?? null,
-                portTypes: Array.isArray(d.portTypes) ? d.portTypes : [],
-                portVlans: Array.isArray(d.portVlans) ? d.portVlans : [],
-                status: "unknown",
-                latency: 0,
-              },
-            });
-          }
-        }
-        setNodes(loadedNodes);
-
-        // Load Edges (Kabel)
-        const edgesRes = await fetch("/api/edges");
-        const dbEdges = await edgesRes.json();
-        if (Array.isArray(dbEdges)) {
-          const mappedEdges: Edge[] = dbEdges.map((e) => ({
-            id: e.id,
-            source: e.source,
-            target: e.target,
-            sourceHandle: e.sourceHandle,
-            targetHandle: e.targetHandle,
-            ...buildEdgeVisuals(
-              e.color || "#94a3b8",
-              e.sourceHandle,
-              e.targetHandle,
-              e.labelProgress ?? 0.5,
-            ),
-          }));
-          setEdges(mappedEdges);
-        }
-
-        // Load Canvas Settings (Lock / Unlock Interactivity)
-        const settingsRes = await fetch("/api/canvas-settings");
-        if (settingsRes.ok) {
-          const settingsData = await settingsRes.json();
-          if (typeof settingsData?.isInteractive === "boolean") {
-            setIsInteractive(settingsData.isInteractive);
-          }
-        }
-      } catch (error) {
-        console.error("Gagal memuat data", error);
       }
-    };
-    loadData();
+
+      if (Array.isArray(data)) {
+        for (const d of data) {
+          loadedNodes.push({
+            id: d.id.toString(),
+            type: "device",
+            position: { x: d.xPos, y: d.yPos },
+            data: {
+              remark: d.remark,
+              type: d.type?.name || "Device",
+              icon: d.type?.icon || "monitor",
+              ip: d.ipAddress,
+              portCount: d.portCount ?? null,
+              portTypes: Array.isArray(d.portTypes) ? d.portTypes : [],
+              portVlans: Array.isArray(d.portVlans) ? d.portVlans : [],
+              status: "unknown",
+              latency: 0,
+            },
+          });
+        }
+      }
+      setNodes(loadedNodes);
+
+      // Load Edges (Kabel)
+      const edgesRes = await fetch("/api/edges");
+      const dbEdges = await edgesRes.json();
+      if (Array.isArray(dbEdges)) {
+        const mappedEdges: Edge[] = dbEdges.map((e) => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          sourceHandle: e.sourceHandle,
+          targetHandle: e.targetHandle,
+          ...buildEdgeVisuals(
+            e.color || "#94a3b8",
+            e.sourceHandle,
+            e.targetHandle,
+            e.labelProgress ?? 0.5,
+          ),
+        }));
+        setEdges(mappedEdges);
+      }
+
+      // Load Canvas Settings (Lock / Unlock Interactivity)
+      const settingsRes = await fetch("/api/canvas-settings");
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        if (typeof settingsData?.isInteractive === "boolean") {
+          setIsInteractive(settingsData.isInteractive);
+        }
+      }
+    } catch (error) {
+      console.error("Gagal memuat data", error);
+    }
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // --- 2. SINKRONISASI DATA DARI DATABASE (Pasif) ---
   useEffect(() => {
@@ -775,16 +791,54 @@ function FlowCanvas() {
 
     return nodes.map((node) => {
       const portColors = portColorMap[node.id];
-      if (!portColors && !node.data?.portColors) return node;
+      const isHighlighted = highlightedNodeId === node.id;
+      if (!portColors && !node.data?.portColors && !isHighlighted && !node.data?.isHighlighted) {
+        return node;
+      }
       return {
         ...node,
         data: {
           ...node.data,
           portColors: portColors || {},
+          isHighlighted,
         },
       };
     });
-  }, [nodes, edges]);
+  }, [nodes, edges, highlightedNodeId]);
+
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    const deviceNodes = nodes.filter((n) => n.type === "device");
+    if (!q) return deviceNodes.slice(0, 8);
+    return deviceNodes.filter((n) => {
+      const remark = (n.data?.remark || "").toLowerCase();
+      const ip = (n.data?.ip || "").toLowerCase();
+      const type = (n.data?.type || "").toLowerCase();
+      return remark.includes(q) || ip.includes(q) || type.includes(q);
+    });
+  }, [nodes, searchQuery]);
+
+  const handleFocusDevice = useCallback(
+    (node: Node) => {
+      if (!reactFlowInstance) return;
+      const centerX = node.position.x + 80;
+      const centerY = node.position.y + 65;
+      reactFlowInstance.setCenter(centerX, centerY, {
+        zoom: 1.15,
+        duration: 450,
+      });
+
+      setHighlightedNodeId(node.id);
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+      highlightTimeoutRef.current = setTimeout(() => {
+        setHighlightedNodeId(null);
+      }, 2500);
+      setIsSearchOpen(false);
+    },
+    [reactFlowInstance],
+  );
 
   const handleAddArea = async (shape: string) => {
     const areaId = `area-${Date.now()}`;
@@ -912,7 +966,7 @@ function FlowCanvas() {
           ? undefined
           : parts.length === 1
             ? parts[0]
-            : `${parts[0]} Ã¢â€ â€ ${parts[1]}`;
+            : `${parts[0]} ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬Â ${parts[1]}`;
       return {
         ...edge,
         data: {
@@ -939,6 +993,72 @@ function FlowCanvas() {
     }
   }, []);
 
+  const handleExportTopology = async () => {
+    try {
+      const res = await fetch("/api/network/export");
+      if (!res.ok) throw new Error("Gagal mengambil data export");
+      const data = await res.json();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.download = `network-topology-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export gagal:", error);
+      alert("Gagal mengekspor topologi jaringan.");
+    }
+  };
+
+  const handleImportFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (
+      !confirm(
+        "Import akan mengganti seluruh topologi (perangkat, kabel, dan area) saat ini dengan data dari file. Lanjutkan?",
+      )
+    ) {
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const res = await fetch("/api/network/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(parsed),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        alert(result.error || "Gagal mengimpor file topologi.");
+        return;
+      }
+
+      setSelectedEdge(null);
+      await loadData();
+      alert(
+        `Import berhasil: ${result.counts?.deviceCount ?? 0} perangkat, ${result.counts?.edgeCount ?? 0} kabel, ${result.counts?.areaCount ?? 0} area.`,
+      );
+    } catch (error) {
+      console.error("Import gagal:", error);
+      alert("File JSON tidak valid atau gagal diimpor.");
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
     <div className="flex flex-row h-full w-full bg-slate-50 relative overflow-hidden">
       {/* SIDEBAR MASTER TIPE DI KANAN (Auto Hide) */}
@@ -951,7 +1071,98 @@ function FlowCanvas() {
       <div className="flex-1 h-full relative w-full" ref={reactFlowWrapper}>
         {/* TOOLBAR WARNA KABEL & GAMBAR AREA */}
         <div className="absolute top-4 left-4 z-30 flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg px-3 py-2 shadow-sm">
+          {/* SEARCH BAR FIND DEVICE */}
+          <div className="relative">
+            <div className="h-9 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg px-2.5 shadow-sm focus-within:ring-1 focus-within:ring-slate-900">
+              <Search size={14} className="text-slate-400 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onFocus={() => setIsSearchOpen(true)}
+                onBlur={() => {
+                  setTimeout(() => setIsSearchOpen(false), 150);
+                }}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchOpen(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && searchResults.length > 0) {
+                    e.preventDefault();
+                    handleFocusDevice(searchResults[0]);
+                  } else if (e.key === "Escape") {
+                    setIsSearchOpen(false);
+                    setSearchQuery("");
+                  }
+                }}
+                placeholder="Cari device / IP..."
+                className="w-40 text-xs text-slate-800 placeholder:text-slate-400 bg-transparent focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setHighlightedNodeId(null);
+                  }}
+                  className="text-slate-400 hover:text-slate-700"
+                  title="Bersihkan pencarian"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            {isSearchOpen && (
+              <div className="absolute left-0 mt-1.5 w-64 max-h-64 overflow-y-auto bg-white border border-slate-200 rounded-lg shadow-lg divide-y divide-slate-100 z-40">
+                {searchResults.length === 0 ? (
+                  <div className="px-3 py-3 text-xs text-slate-400 text-center">
+                    Perangkat tidak ditemukan
+                  </div>
+                ) : (
+                  searchResults.map((node) => {
+                    const status = node.data?.status;
+  return (
+                      <button
+                        key={node.id}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          handleFocusDevice(node);
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-2 transition-colors"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${
+                              status === "online"
+                                ? "bg-emerald-500"
+                                : status === "offline"
+                                  ? "bg-rose-500"
+                                  : "bg-slate-300"
+                            }`}
+                          />
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-slate-800 truncate">
+                              {node.data?.remark}
+                            </div>
+                            <div className="text-[10px] font-mono text-slate-500 truncate">
+                              {node.data?.ip || "Tanpa IP"}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 shrink-0">
+                          {node.data?.type}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="h-9 flex items-center gap-2 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg px-3 shadow-sm">
             <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600 pr-1 border-r border-slate-200">
               <Palette size={14} className="text-slate-500" />
               <span>Warna Line</span>
@@ -986,7 +1197,7 @@ function FlowCanvas() {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg px-2.5 py-1.5 shadow-sm">
+          <div className="h-9 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg px-2.5 shadow-sm">
             <span className="text-xs font-medium text-slate-600 pr-1.5 border-r border-slate-200">
               Area
             </span>
@@ -1001,6 +1212,36 @@ function FlowCanvas() {
                 {s.icon}
               </button>
             ))}
+          </div>
+
+          <div className="h-9 flex items-center gap-1 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-lg px-2 shadow-sm">
+            <button
+              type="button"
+              onClick={handleExportTopology}
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              title="Export Topologi ke JSON"
+            >
+              <Download size={14} />
+              <span>Export</span>
+            </button>
+            <div className="w-[1px] h-4 bg-slate-200" />
+            <button
+              type="button"
+              disabled={isImporting}
+              onClick={() => importInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 disabled:opacity-50 transition-colors"
+              title="Import Topologi dari JSON"
+            >
+              <Upload size={14} />
+              <span>{isImporting ? "Importing..." : "Import"}</span>
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={handleImportFileChange}
+              className="hidden"
+            />
           </div>
         </div>
 
@@ -1110,15 +1351,15 @@ function FlowCanvas() {
                     : "text-slate-600"
                 }`}
               >
-                {selectedAreaNode.data.rotation ?? 0}Ã‚Â°
+                {selectedAreaNode.data.rotation ?? 0}Ãƒâ€šÃ‚Â°
               </span>
               <button
                 type="button"
                 onClick={() => updateSelectedArea({ rotation: 0 })}
                 className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                title="Luruskan ke 0Ã‚Â°"
+                title="Luruskan ke 0Ãƒâ€šÃ‚Â°"
               >
-                <RotateCcw size={11} /> 0Ã‚Â°
+                <RotateCcw size={11} /> 0Ãƒâ€šÃ‚Â°
               </button>
             </div>
 
@@ -1142,7 +1383,7 @@ function FlowCanvas() {
               </span>
               {(selectedEdge.sourceHandle || selectedEdge.targetHandle) && (
                 <span className="text-[10px] font-mono text-slate-500">
-                  {selectedEdge.sourceHandle || "auto"} ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢{" "}
+                  {selectedEdge.sourceHandle || "auto"} ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢{" "}
                   {selectedEdge.targetHandle || "auto"}
                 </span>
               )}
@@ -1224,7 +1465,7 @@ function FlowCanvas() {
           nodesConnectable={isInteractive}
           elementsSelectable={isInteractive}
           connectionMode={ConnectionMode.Loose}
-          // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ PERBAIKAN: Cek apakah 'window' tersedia (berarti sedang di browser, bukan di server)
+          // ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦ PERBAIKAN: Cek apakah 'window' tersedia (berarti sedang di browser, bukan di server)
           fitView={
             typeof window !== "undefined"
               ? !localStorage.getItem("rf-viewport")

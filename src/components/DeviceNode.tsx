@@ -118,7 +118,11 @@ const DeviceNode = ({ id, data }: any) => {
 
   return (
     <div
-      className={`relative group flex flex-col bg-white border border-slate-200 rounded-xl p-3.5 shadow-sm hover:shadow-md hover:border-slate-300 transition-all duration-200 ${nodeWidthClass}`}
+      className={`relative group flex flex-col bg-white border rounded-xl p-3.5 shadow-sm hover:shadow-md transition-all duration-200 ${nodeWidthClass} ${
+        data.isHighlighted
+          ? "border-blue-500 ring-4 ring-blue-500/30 shadow-lg"
+          : "border-slate-200 hover:border-slate-300"
+      }`}
     >
       {/* --- PORT KONEKSI STANDAR (NON-SWITCH) --- */}
       {portCount === 0 && (
