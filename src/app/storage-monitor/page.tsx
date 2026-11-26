@@ -35,6 +35,7 @@ export default function StorageMonitorPage() {
 
   // State penyimpanan data Pool (ID Server -> Array of Pools)
   const [livePools, setLivePools] = useState<Record<string, any[]>>({});
+  const [poolErrors, setPoolErrors] = useState<Record<string, string>>({});
 
   // State Modal Form
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,8 +115,19 @@ export default function StorageMonitorPage() {
 
       if (data.success && data.pools) {
         setLivePools((prev) => ({ ...prev, [server.id]: data.pools }));
+        setPoolErrors((prev) => {
+          const next = { ...prev };
+          delete next[server.id];
+          return next;
+        });
+      } else if (data.error) {
+        setPoolErrors((prev) => ({ ...prev, [server.id]: data.error }));
       }
     } catch (e) {
+      setPoolErrors((prev) => ({
+        ...prev,
+        [server.id]: "Gagal terhubung ke server storage",
+      }));
       console.error(`Gagal tarik data pool ${server.name}`);
     }
   };
@@ -292,6 +304,13 @@ export default function StorageMonitorPage() {
                           </div>
                         );
                       })}
+                    </div>
+                  ) : poolErrors[server.id] ? (
+                    <div className="rounded-lg border border-rose-200 bg-rose-50/80 px-3 py-3 text-xs text-rose-700">
+                      <span className="font-semibold block mb-0.5">
+                        Gagal memuat pool:
+                      </span>
+                      <span>{poolErrors[server.id]}</span>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-6 text-slate-400">

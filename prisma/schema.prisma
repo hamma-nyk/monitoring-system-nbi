@@ -19,6 +19,14 @@ model User {
   @@schema("sc_master") // Penanda bahwa tabel ini masuk ke sc_master
 }
 
+model DashboardSetting {
+  id        Int      @id @default(1)
+  layout    Json
+  updatedAt DateTime @updatedAt
+
+  @@schema("sc_master")
+}
+
 // ==========================================
 // SCHEMA: sc_network
 // ==========================================
