@@ -54,13 +54,28 @@ cd monitoring
 npm install
 ```
 
-Buat file `.env` di root project (`d:\PROJECT\monitoring\.env`) dan isi koneksi PostgreSQL:
+Salin file `.env.example` menjadi `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Lalu sesuaikan isi `.env`:
 
 ```env
 DATABASE_URL="postgresql://USERNAME:PASSWORD@localhost:5432/ikoit_monitoring"
+JWT_SECRET="ganti-dengan-secret-key-acak-yang-aman"
 ```
 
-> Sesuaikan `USERNAME`, `PASSWORD`, host, port, dan nama database dengan konfigurasi PostgreSQL Anda.
+> Sesuaikan `USERNAME`, `PASSWORD`, host, port, nama database, dan `JWT_SECRET` dengan konfigurasi Anda.
+
+---
+
+## WhatsApp Bot (Terpisah)
+
+Untuk fitur notifikasi WhatsApp (`ping-engine.js` & halaman `/whatsapp`), service **WhatsApp Bot** berada di repository terpisah:
+- Repository: **https://github.com/hamma-nyk/monitoring-system-nbi-wabot**
+- Pastikan service bot WhatsApp sudah berjalan di `http://127.0.0.1:3333` agar pengiriman pesan notifikasi otomatis berfungsi.
 
 ---
 
